@@ -1,6 +1,6 @@
 module GameState where
 
-import Data.Array (Array, (!), (//))
+import Data.Array (Array, (!), (//), listArray)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Prelude hiding (Left, Right)
@@ -37,6 +37,12 @@ data Board = Board
     currentPlayer :: !Player
   }
   deriving (Show, Eq)
+
+emptyBoard :: Int -> Int -> Player -> Board
+emptyBoard ncol nrow p = Board { 
+  grid = listArray ((0, 0), (ncol - 1, nrow - 1)) (repeat Nothing)
+  , currentPlayer = p
+  }
 
 -- | An MCTS tree node
 data Node = Node
