@@ -1,0 +1,12 @@
+All easy goals were completed:
+- data structure for representing connect four
+- sequential beam monte carlo search
+- parallel rollout from leaves
+
+To test sequential mode, replace backpropParallel with backprop in the Main.hs beamMonteCarlo
+Run with cabal run mcts-connectfour
+
+You'll find that column 3 (the middle) is the best first move as expected
+Note: each iteration fully traverses the tree, so iteration numbers should be kept low (no more than 10)
+Parallel MCTS runs quickly with 3 iterations (57 visits per column), and exploits parallelism well (program goes up to >500% CPU usage)
+TODO: medium/hard goals,test_suite

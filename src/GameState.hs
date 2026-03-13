@@ -5,6 +5,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Prelude hiding (Left, Right)
 import Data.Maybe (isNothing)
+import Control.DeepSeq (NFData, rnf)
 
 -- | Connect 4 board dimensions
 numRows, numCols :: Int
@@ -21,6 +22,10 @@ type Cell = Maybe Player
 data Player = One | Two
   deriving (Show, Eq, Ord)
 
+instance NFData Player where
+  rnf One = ()
+  rnf Two = ()
+
 -- | Swap to the other player
 otherPlayer :: Player -> Player
 otherPlayer One = Two
@@ -29,6 +34,11 @@ otherPlayer Two = One
 -- | The result of a game at any point
 data GameResult = Win Player | Draw | Ongoing
   deriving (Show, Eq)
+
+instance NFData GameResult where
+  rnf (Win p) = rnf p
+  rnf Draw    = ()
+  rnf Ongoing = ()
 
 -- | A Connect 4 board. The grid is indexed by (column, row).
 --   Row 0 is the bottom.
