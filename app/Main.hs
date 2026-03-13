@@ -10,6 +10,9 @@ import GameState
 main :: IO ()
 main = do
     gen <- newStdGen
+    rootNode <- mkNode (emptyBoard numCols numRows One) One
+    (tree, gen1) <- beamMonteCarlo gen [rootNode] []
+    --do something with the tree lol
 
 -- | Pick n random numbers in (0,6) from a generator
 pickRandom :: Int -> StdGen -> ([Int], StdGen)
@@ -39,7 +42,7 @@ beamMonteCarlo gen (b : beam) later = beamMonteCarlo gen1 (beam ++ forBeam) (lat
         childMap         = case children expanded of
                              Just m  -> m
                              Nothing -> Map.empty
-        (picked, gen1)   = pickWeighted sLevel gen childMap
+        (picked, gen1)   = pickRandom sLevel gen childMap
         forBeam          = picked
         notPicked        = filter (`notElem` picked) (Map.elems childMap)
         forLater         = notPicked
@@ -60,8 +63,6 @@ backprop n
         updatedChildren = Map.map backprop childMap
         subtreeWins     = sum (map winCount   (Map.elems updatedChildren))
         subtreeVisits   = sum (map visitCount (Map.elems updatedChildren))
-
-
 
 -- | Score a node by win rate
 winRate :: Node -> Double
