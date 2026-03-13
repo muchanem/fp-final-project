@@ -4,6 +4,7 @@ import Data.Array (Array, (!), (//))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Prelude hiding (Left, Right)
+import Data.Maybe (isNothing)
 
 -- | Connect 4 board dimensions
 numRows, numCols :: Int
@@ -49,7 +50,7 @@ data Node = Node
 
 -- | Get all legal moves (columns that aren't full)
 legalMoves :: Board -> [Move]
-legalMoves b = filter (\col -> grid b ! (col, numRows - 1) == Nothing) [0 .. numCols - 1]
+legalMoves b = filter (\col -> isNothing (grid b ! (col, numRows - 1))) [0 .. numCols - 1]
 
 -- | Cardinal and diagonal directions on the board
 data Direction = Up | Down | Left | Right | UpRight | UpLeft | DownRight | DownLeft
@@ -110,13 +111,16 @@ checkResultFast b pos =
 
 -- | Apply a move to the board. Returns the updated board and the game result.
 -- NOTE: only pass legal moves, will be undefined behavior if not
+  -- RESOLVED: will just skip turn if illegal move proposed (hopefully)
 applyMove :: Board -> Move -> (Board, GameResult)
 applyMove b col =
-  let row = head [r | r <- [0 .. numRows - 1], grid b ! (col, r) == Nothing]
+  let row = head [r | r <- [0 .. numRows - 1], isNothing (grid b ! (col, r))]
       pos = (col, row)
       player = currentPlayer b
       grid' = grid b // [(pos, Just player)]
-      b' = Board {grid = grid', currentPlayer = otherPlayer player}
+      b'
+        | elem col (legalMoves b) = Board {grid = grid', currentPlayer = otherPlayer player}
+        | otherwise = b {currentPlayer = otherPlayer player}
       result = checkResultFast b' pos
    in (b', result)
 
