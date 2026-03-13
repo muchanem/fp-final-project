@@ -30,19 +30,36 @@ selectChildren :: [Int] -> Map.Map Move Node -> [Node]
 selectChildren cols childMap = [c | col <- cols, Just c <- Map.lookup col childMap)]
 
 beamMonteCarlo :: StdGen -> [Node] -> [Node] -> ([Node], StdGen)
-beamMonteCarlo gen [] [] = ([], gen)
-beamMonteCarlo gen [] (l:later) = beamMonteCarlo gen [l] later 
-beamMonteCarlo gen (b:beam) later = beamMonteCarlo gen1 (beam ++ forBeam) (later ++ forLater)
-    where s_level = 2 -- can update this to change per level if one wants
-        expanded = updateCounts . expandNode b  -- generate all its children
-        -- Randomly pick sLevel (2) children
-        (picked, gen1) = pickRandom s_level gen
-        forBeam = selectChildren picked (children expanded)
-        -- The remaining children go to later
-        notpicked = filter [0..6] `notElem` picked 
-        forLater = selectChildren notpicked (children expanded)
+beamMonteCarlo gen [] []            = ([], gen)
+beamMonteCarlo gen [] (l : later)   = beamMonteCarlo gen [l] later
+beamMonteCarlo gen (b : beam) later = beamMonteCarlo gen1 (beam ++ forBeam) (later ++ forLater)
+    where
+        sLevel           = 2
+        expanded         = backprop b
+        childMap         = case children expanded of
+                             Just m  -> m
+                             Nothing -> Map.empty
+        (picked, gen1)   = pickWeighted sLevel gen childMap
+        forBeam          = picked
+        notPicked        = filter (`notElem` picked) (Map.elems childMap)
+        forLater         = notPicked
 
-
+backprop :: Node -> Node
+backprop n
+    | gameResult n /= Ongoing = updateCounts n
+    | visitCount n == 0       = updateCounts (expandNode n)
+    | otherwise               = updateCounts $ n
+        { visitCount = visitCount n + subtreeVisits
+        , winCount   = winCount n + subtreeWins
+        , children   = Just updatedChildren
+        }
+    where
+        childMap        = case children n of
+                            Just m  -> m
+                            Nothing -> Map.empty
+        updatedChildren = Map.map backprop childMap
+        subtreeWins     = sum (map winCount   (Map.elems updatedChildren))
+        subtreeVisits   = sum (map visitCount (Map.elems updatedChildren))
 
 
 
@@ -52,34 +69,4 @@ winRate n
     | visitCount n == 0 = 0.5
     | otherwise = winCount n `div` visitCount n
 
-{-
-Plan: https://www.lamsade.dauphine.fr/~cazenave/papers/beam.pdf
-
-    beam ←{position}
-    while true do
-        nextBeam ←∅
-        for b in beam do
-            p ←b
-            if there is a move to play in the best playout of p then
-                play (p, move of the best playout)
-            end if
-            add p to nextBeam
-            for move in possible moves of b do
-                p ←b
-                play (p, move)
-                if level = 1 then
-                    sample (p)
-                else
-                    beamMonteCarlo (p, level−1)
-                end if
-                add p to nextBeam
-            end for
-        end for
-        if beam = nextBeam then
-            break
-        end if
-        keep only the best s_level positions in nextBeam
-        beam <- next beam
-    end while
--}
 
